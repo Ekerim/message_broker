@@ -1,3 +1,22 @@
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "message_broker"
+version = "0.5.0"
+description = "A simple thread-safe in-app pub/sub message broker module."
+readme = "README.md"
+license = {text = "LGPL-3.0"}
+authors = [
+    {name = "Fredrik Larsson", email = "ekerim@gmail.com"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.6"
+dependencies = [
+    "twisted",
+]
