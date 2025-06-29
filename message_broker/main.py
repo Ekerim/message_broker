@@ -27,13 +27,13 @@ from typing import Dict, Set, Callable
 class MessageBroker:
     _instance = None
     
-    def __new__(cls):
+    def __new__(cls, config=None):
         if cls._instance is None:
             cls._instance = super(MessageBroker, cls).__new__(cls)
-            cls._instance._initialize()
+            cls._instance._initialize(config)
         return cls._instance
         
-    def _initialize(self):
+    def _initialize(self, config=None):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
@@ -43,8 +43,20 @@ class MessageBroker:
         self.lock = threading.Lock()
         self._wake_event = threading.Event()
         
+        # Store configuration
+        self._config = config or {}
+        self._networking_enabled = self._config.get('network', {}).get('enabled', False)
+        
         self._topics = {}
-        self._message_queue = queue.Queue()  # Added single message queue
+        self._message_queue_in = queue.Queue()  # Internal message queue
+        
+        # Add outgoing message queue for network communication
+        if self._networking_enabled:
+            self._message_queue_out = queue.Queue()
+            self.logger.info("Network messaging enabled")
+        else:
+            self._message_queue_out = None
+            self.logger.info("Network messaging disabled")
 
         self.logger.info(f"Message Broker Initialized. (Client ID: {self.__class__.__module__}.{id(self)})")
         
@@ -61,7 +73,7 @@ class MessageBroker:
             self.logger.debug(f"\n{message}")
             return
             
-        self._message_queue.put(message)
+        self._message_queue_in.put(message)
         self._wake_event.set()
         # self.logger.debug(f"Published message to topic {message['topic']}: {message['data']}")
 
@@ -103,9 +115,9 @@ class MessageBroker:
         while self._running:
             start_time = time.time()
             
-            while not self._message_queue.empty():
+            while not self._message_queue_in.empty():
                 try:
-                    message = self._message_queue.get_nowait()
+                    message = self._message_queue_in.get_nowait()
                     
                     msg_topic = message['topic']
                     self.logger.debug(f"Processing message for topic: {msg_topic}")
@@ -115,7 +127,7 @@ class MessageBroker:
                             for callback in self._topics[topic_pattern].values():
                                 callback(message['data'])
                     
-                    self._message_queue.task_done()
+                    self._message_queue_in.task_done()
                 except queue.Empty:
                     break
             
