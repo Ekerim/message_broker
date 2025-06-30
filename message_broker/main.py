@@ -44,7 +44,10 @@ class MessageBroker:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
-        self.logger.debug(f"Message Broker Initializing. (Client ID: {self.__class__.__module__}.{id(self)})")
+        # Generate unique origin ID for this MessageBroker instance
+        self._origin_id = f"{self.__class__.__module__}.{id(self)}"
+
+        self.logger.debug(f"Message Broker Initializing. (Origin ID: {self._origin_id})")
 
         self._running = True
         self.lock = threading.Lock()
@@ -54,8 +57,6 @@ class MessageBroker:
         self._config = config or {}
         self._networking_enabled = self._config.get('network', {}).get('enabled', False)
         
-        # Generate unique origin ID for this MessageBroker instance
-        self._origin_id = f"{self.__class__.__module__}.{id(self)}"
         self.logger.debug(f"MessageBroker origin ID: {self._origin_id}")
         
         self._topics = {}
@@ -69,7 +70,7 @@ class MessageBroker:
             self._message_queue_out = None
             self.logger.info("Network messaging disabled")
 
-        self.logger.info(f"Message Broker Initialized. (Client ID: {self.__class__.__module__}.{id(self)})")
+        self.logger.info(f"Message Broker Initialized. (Origin ID: {self._origin_id})")
         
         # Start message processing thread
         self.worker = threading.Thread(target=self._process_messages)
@@ -129,7 +130,7 @@ class MessageBroker:
     def _process_messages(self):
         """Process messages from all queues"""
 
-        self.logger.info(f"Message Broker started. (Client ID: {self.__class__.__module__}.{id(self)})")
+        self.logger.info(f"Message Broker started. (Origin ID: {self._origin_id})")
 
         while self._running:
             start_time = time.time()
@@ -158,7 +159,7 @@ class MessageBroker:
 
 
     def stop(self):
-        self.logger.debug(f"Message Broker stopping. (Client ID: {self.__class__.__module__}.{id(self)})")
+        self.logger.debug(f"Message Broker stopping. (Origin ID: {self._origin_id})")
 
         self._running = False
         self._wake_event.set()
@@ -169,4 +170,4 @@ class MessageBroker:
         self._topics.clear()
         MessageBroker._instance = None
             
-        self.logger.info(f"Message Broker stopped. (Client ID: {self.__class__.__module__}.{id(self)})")
+        self.logger.info(f"Message Broker stopped. (Origin ID: {self._origin_id})")
