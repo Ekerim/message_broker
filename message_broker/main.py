@@ -54,6 +54,10 @@ class MessageBroker:
         self._config = config or {}
         self._networking_enabled = self._config.get('network', {}).get('enabled', False)
         
+        # Generate unique origin ID for this MessageBroker instance
+        self._origin_id = f"{self.__class__.__module__}.{id(self)}"
+        self.logger.debug(f"MessageBroker origin ID: {self._origin_id}")
+        
         self._topics = {}
         self._message_queue_in = queue.Queue()  # Internal message queue
         
@@ -80,7 +84,15 @@ class MessageBroker:
             self.logger.debug(f"\n{message}")
             return
             
+        # Always publish to local queue for local subscribers
         self._message_queue_in.put(message)
+        
+        # Only send to network if message has no origin (local message)
+        if message.get('origin') is None:
+            if self._networking_enabled:
+                self._message_queue_out.put(message)
+                self.logger.debug(f"Local message sent to network queue: {message.get('topic')}")
+            
         self._wake_event.set()
         # self.logger.debug(f"Published message to topic {message['topic']}: {message['data']}")
 
