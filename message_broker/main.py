@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Your Name
+# Copyright (c) 2025 Fredrik Larsson
 # 
 # This file is part of the Message Broker library.
 # 
