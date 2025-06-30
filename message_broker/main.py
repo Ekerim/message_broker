@@ -57,7 +57,7 @@ class MessageBroker:
         self._config = config or {}
         self._networking_enabled = self._config.get('network', {}).get('enabled', False)
         
-        self.logger.debug(f"MessageBroker origin ID: {self._origin_id}")
+        self.logger.debug(f"Message Broker origin ID: {self._origin_id}")
         
         self._topics = {}
         self._message_queue_in = queue.Queue()  # Internal message queue
@@ -65,10 +65,10 @@ class MessageBroker:
         # Add outgoing message queue for network communication
         if self._networking_enabled:
             self._message_queue_out = queue.Queue()
-            self.logger.info("Network messaging enabled")
+            self.logger.info("Message Broker: Network messaging enabled")
         else:
             self._message_queue_out = None
-            self.logger.info("Network messaging disabled")
+            self.logger.info("Message Broker: Network messaging disabled")
 
         self.logger.info(f"Message Broker Initialized. (Origin ID: {self._origin_id})")
         
