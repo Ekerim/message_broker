@@ -24,41 +24,60 @@ from twisted.internet import reactor, protocol, endpoints
 from twisted.python import log
 
 
-class NetworkServer:
+class _NetworkServer:
     """
     Handles network communication for the MessageBroker using Twisted.
     Runs the Twisted reactor in a separate thread to avoid blocking.
     """
     
+    def __new__(cls, message_broker, config: Dict[str, Any]):
+        # Check if networking is enabled before creating instance
+        networking_enabled = config.get('network', {}).get('enabled', False)
+        if not networking_enabled:
+            return None
+        
+        # Create the instance normally if networking is enabled
+        return super().__new__(cls)
+    
     def __init__(self, message_broker, config: Dict[str, Any]):
         self.logger = logging.getLogger(__name__)
+        
         self.message_broker = message_broker
+        
+        # Store origin ID locally for efficient access
+        self._origin_id = self.message_broker._origin_id
+        
+        self.logger.debug(f"Network Server Initializing. (Origin ID: {self._origin_id})")
+        
         self.config = config.get('network', {})
         
         # Network configuration
         self.host = self.config.get('host', 'localhost')
-        self.port = self.config.get('port', 8080)
+        self.port = self.config.get('port', 50000)
         self.secret = self.config.get('secret', '')
+        
+        # Validate that secret is provided for security
+        if not self.secret:
+            raise ValueError("Network secret is required for secure communication. "
+                           "Please provide a secret in the network configuration.")
         
         # Threading
         self._reactor_thread = None
         self._running = False
         
-        self.logger.info(f"NetworkServer initialized for {self.host}:{self.port}")
-    
-    def start(self):
-        """Start the network server in a separate thread"""
-        if self._running:
-            self.logger.warning("NetworkServer already running")
-            return
-            
-        self._running = True
+        # Start the network server immediately
         self._reactor_thread = threading.Thread(target=self._run_reactor, daemon=True)
         self._reactor_thread.start()
-        self.logger.info("NetworkServer started")
+        
+        # Only set running to True after thread is started
+        self._running = True
+        
+        self.logger.info(f"Network Server Initialized for {self.host}:{self.port} (Origin ID: {self._origin_id})")
     
     def stop(self):
         """Stop the network server"""
+        self.logger.debug(f"Network Server stopping. (Origin ID: {self._origin_id})")
+        
         if not self._running:
             return
             
@@ -69,7 +88,7 @@ class NetworkServer:
         if self._reactor_thread and self._reactor_thread.is_alive():
             self._reactor_thread.join(timeout=5.0)
             
-        self.logger.info("NetworkServer stopped")
+        self.logger.info(f"Network Server stopped. (Origin ID: {self._origin_id})")
     
     def _run_reactor(self):
         """Run the Twisted reactor in this thread"""
@@ -78,9 +97,9 @@ class NetworkServer:
             # TODO: Start monitoring outgoing message queue
             # TODO: Set up authentication
             
-            self.logger.info("Twisted reactor starting")
+            self.logger.debug("Network Server reactor starting")
             reactor.run(installSignalHandlers=False)
-            self.logger.info("Twisted reactor stopped")
+            self.logger.debug("Network Server reactor stopped")
             
         except Exception as e:
             self.logger.error(f"Error in reactor thread: {e}")
