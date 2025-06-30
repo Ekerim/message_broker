@@ -27,11 +27,18 @@ from typing import Dict, Set, Callable
 class MessageBroker:
     _instance = None
     
-    def __new__(cls, config=None):
-        if cls._instance is None:
-            cls._instance = super(MessageBroker, cls).__new__(cls)
-            cls._instance._initialize(config)
-        return cls._instance
+    def __new__(cls, config=None, singleton=True):
+        if singleton:
+            # Standard singleton behavior
+            if cls._instance is None:
+                cls._instance = super(MessageBroker, cls).__new__(cls)
+                cls._instance._initialize(config)
+            return cls._instance
+        else:
+            # Create new instance for testing
+            instance = super(MessageBroker, cls).__new__(cls)
+            instance._initialize(config)
+            return instance
         
     def _initialize(self, config=None):
         self.logger = logging.getLogger(__name__)
