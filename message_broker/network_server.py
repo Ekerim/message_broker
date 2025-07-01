@@ -17,7 +17,7 @@
 
 import threading
 import logging
-import json
+import msgpack
 from typing import Dict, Any, Optional
 
 from twisted.internet import reactor, protocol, endpoints
